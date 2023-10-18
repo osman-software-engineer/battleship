@@ -12,10 +12,11 @@ public class Main {
         Ship[] ships = new Ship[5];
         initializeShips(ships);
         Scanner scanner = new Scanner(System.in);
-        //Main Game Loop
+        String userInput;
+        Coordinates shipCoordinates = null;
         for (Ship ship : ships) {
             System.out.printf("Enter the coordinates of the %s (%s cells):\n", ship.getName(), ship.getSize());
-            String userInput = scanner.nextLine();
+            userInput = scanner.nextLine();
             // Validate Ship Location is within the dimensions of game board.
             while (!gameBoard.isShipLocationCorrect(userInput)) {
                 System.out.println("Error! Wrong ship location! Try again:");
@@ -24,52 +25,80 @@ public class Main {
                 continue;
             }
             // Validate Ship location is not diagonal
-            Location shipLocation = getCoordinates(userInput);
-            while (gameBoard.getShipOrientation(shipLocation).equalsIgnoreCase("diagonal") || !gameBoard.isShipLocationCorrect(userInput)) {
+            shipCoordinates = getShipCoordinates(userInput);
+            while (gameBoard.getShipOrientation(shipCoordinates).equalsIgnoreCase("diagonal") || !gameBoard.isShipLocationCorrect(userInput)) {
                 System.out.println("Error! Wrong ship location! Try again:");
                 userInput = scanner.nextLine();
-                shipLocation = getCoordinates(userInput);
+                shipCoordinates = getShipCoordinates(userInput);
                 continue;
             }
 
-            while (!gameBoard.isShipLengthCorrect(shipLocation, ship)) {
+            while (!gameBoard.isShipLengthCorrect(shipCoordinates, ship)) {
                 System.out.printf("Error! Wrong length of the %s! Try again:\n", ship.getName());
                 userInput = scanner.nextLine();
-                shipLocation = getCoordinates(userInput);
+                shipCoordinates = getShipCoordinates(userInput);
                 //Validate Ship Location
                 while (!gameBoard.isShipLocationCorrect(userInput)) {
                     System.out.println("Error! Wrong ship location! Try again:");
                     userInput = scanner.nextLine();
-                    shipLocation = getCoordinates(userInput);
+                    shipCoordinates = getShipCoordinates(userInput);
                 }
                 continue;
             }
             // Validate Ship Closeness to Other Ship
-            while (gameBoard.isShipTooCloseToOtherShip(shipLocation)) {
+            while (gameBoard.isShipTooCloseToOtherShip(shipCoordinates)) {
                 System.out.println("Error! You placed it too close to another one. Try again:");
                 userInput = scanner.nextLine();
-                shipLocation = getCoordinates(userInput);
-                while (!gameBoard.isShipLocationCorrect(userInput) || gameBoard.getShipOrientation(shipLocation).equalsIgnoreCase("diagonal") ) {
+                shipCoordinates = getShipCoordinates(userInput);
+                while (!gameBoard.isShipLocationCorrect(userInput) || gameBoard.getShipOrientation(shipCoordinates).equalsIgnoreCase("diagonal")) {
                     System.out.println("Error! Wrong ship location! Try again:");
                     userInput = scanner.nextLine();
-                    shipLocation = getCoordinates(userInput);
+                    shipCoordinates = getShipCoordinates(userInput);
                 }
                 continue;
             }
 
-            gameBoard.placeShip(shipLocation);
+            gameBoard.placeShip(shipCoordinates);
+            ship.setLocation(shipCoordinates);
+            gameBoard.printFogOfWar();
+        }
+        System.out.println("The game starts!");
+        gameBoard.printFogOfWar();
+        System.out.println("Take a shot!");
+        Coordinates shotCoordinates = null;
+        userInput = scanner.nextLine();
+        while (!gameBoard.isShotLocationCorrect(userInput)) {
+            System.out.println("Error! You entered the wrong coordinates! Try again:");
+            userInput = scanner.nextLine();
+            shotCoordinates = getShotCoordinates(userInput);
+            continue;
+        }
+        shotCoordinates = getShotCoordinates(userInput);
+
+        if (gameBoard.getCoordinatesStatus(shotCoordinates).equalsIgnoreCase("occupied")){
+            gameBoard.takeShot(shotCoordinates);
+            System.out.println("You hit a ship!");
+            gameBoard.printFogOfWar();
+        } else {
+            gameBoard.missedShot(shotCoordinates);
+            System.out.println("You missed!");
             gameBoard.printFogOfWar();
         }
 
     }
 
-    private static Location getCoordinates(String userInput) {
+    private static Coordinates getShipCoordinates(String userInput) {
         String[] splitUserInput = userInput.split(" ");
         String x1 = splitUserInput[0].substring(0, 1);
         String x2 = splitUserInput[0].substring(1);
         String y1 = splitUserInput[1].substring(0, 1);
         String y2 = splitUserInput[1].substring(1);
-        return new Location(x1, x2, y1, y2);
+        return new Coordinates(x1, x2, y1, y2);
+    }
+    private static Coordinates getShotCoordinates(String userInput) {
+        String x1 = userInput.substring(0, 1);
+        String x2 = userInput.substring(1);
+        return new Coordinates(x1, x2);
     }
 
     private static void initializeShips(Ship[] ships) {
@@ -134,32 +163,60 @@ class Board {
         return matcher.matches();
     }
 
-    public boolean isShipLengthCorrect(Location location, Ship ship) {
-        int x1;
-        int x2;
-        int y1;
-        int y2;
-        String shipOrientation = getShipOrientation(location);
+    public String getCoordinatesStatus(Coordinates coordinates) {
+        int x1, x2;
+        x1 = getRowLabelIndex(coordinates.getX1());
+        x2 = getColumnLabelIndex(coordinates.getX2());
+        if ("O".equalsIgnoreCase(this.field[x1][x2])) {
+            return "occupied";
+        } else {
+            return "empty";
+        }
+    }
+
+    public void takeShot(Coordinates coordinates) {
+        int x1, x2;
+        x1 = getRowLabelIndex(coordinates.getX1());
+        x2 = getColumnLabelIndex(coordinates.getX2());
+        this.field[x1][x2] = "X";
+    }
+    public void missedShot(Coordinates coordinates) {
+        int x1, x2;
+        x1 = getRowLabelIndex(coordinates.getX1());
+        x2 = getColumnLabelIndex(coordinates.getX2());
+        this.field[x1][x2] = "M";
+    }
+
+    public boolean isShotLocationCorrect(String userInput) {
+        String regex = "[A-J](10|[1-9])";
+        Pattern pattern = Pattern.compile(regex);
+        Matcher matcher = pattern.matcher(userInput);
+        return matcher.matches();
+    }
+
+    public boolean isShipLengthCorrect(Coordinates coordinates, Ship ship) {
+        int x1, x2, y1, y2;
+        String shipOrientation = getShipOrientation(coordinates);
         if (shipOrientation.equalsIgnoreCase("horizontal")) {
-            x2 = Integer.parseInt(location.getX2());
-            y2 = Integer.parseInt(location.getY2());
+            x2 = Integer.parseInt(coordinates.getX2());
+            y2 = Integer.parseInt(coordinates.getY2());
             if (x2 < y2) {
-                x2 = Integer.parseInt(location.getX2()) - 1;
-                y2 = Integer.parseInt(location.getY2());
+                x2 = Integer.parseInt(coordinates.getX2()) - 1;
+                y2 = Integer.parseInt(coordinates.getY2());
             } else {
-                x2 = Integer.parseInt(location.getX2());
-                y2 = Integer.parseInt(location.getY2()) - 1;
+                x2 = Integer.parseInt(coordinates.getX2());
+                y2 = Integer.parseInt(coordinates.getY2()) - 1;
             }
             return (Math.abs(Math.abs(x2 - y2) - ship.getSize()) == 0);
         } else if (shipOrientation.equalsIgnoreCase("vertical")) {
-            x1 = getRowLabelIndex(location.getX1());
-            y1 = getRowLabelIndex(location.getY1());
+            x1 = getRowLabelIndex(coordinates.getX1());
+            y1 = getRowLabelIndex(coordinates.getY1());
             if (x1 < y1) {
-                x1 = getRowLabelIndex(location.getX1()) - 1;
-                y1 = getRowLabelIndex(location.getY1());
+                x1 = getRowLabelIndex(coordinates.getX1()) - 1;
+                y1 = getRowLabelIndex(coordinates.getY1());
             } else {
-                x1 = getRowLabelIndex(location.getX1());
-                y1 = getRowLabelIndex(location.getY1()) - 1;
+                x1 = getRowLabelIndex(coordinates.getX1());
+                y1 = getRowLabelIndex(coordinates.getY1()) - 1;
             }
             return (Math.abs(Math.abs(x1 - y1) - ship.getSize()) == 0);
         } else {
@@ -167,26 +224,23 @@ class Board {
         }
     }
 
-    public String getShipOrientation(Location location) {
-        if (!location.getX1().equalsIgnoreCase(location.getY1()) && !location.getX2().equalsIgnoreCase(location.getY2())) {
+    public String getShipOrientation(Coordinates coordinates) {
+        if (!coordinates.getX1().equalsIgnoreCase(coordinates.getY1()) && !coordinates.getX2().equalsIgnoreCase(coordinates.getY2())) {
             return "diagonal";
-        } else if (location.getX1().equals(location.getY1())) {
+        } else if (coordinates.getX1().equals(coordinates.getY1())) {
             return "horizontal";
         } else {
             return "vertical";
         }
     }
 
-    public void placeShip(Location location) {
-        String shipOrientation = getShipOrientation(location);
-        int x1;
-        int x2;
-        int y1;
-        int y2;
+    public void placeShip(Coordinates coordinates) {
+        String shipOrientation = getShipOrientation(coordinates);
+        int x1, x2, y1, y2;
         if (shipOrientation.equalsIgnoreCase("horizontal")) {
-            x1 = getRowLabelIndex(location.getX1());
-            x2 = Integer.parseInt(location.getX2());
-            y2 = Integer.parseInt(location.getY2());
+            x1 = getRowLabelIndex(coordinates.getX1());
+            x2 = Integer.parseInt(coordinates.getX2());
+            y2 = Integer.parseInt(coordinates.getY2());
             if (x2 < y2) {
                 for (int i = x2; i <= y2; i++) {
                     this.field[x1][i - 1] = "O";
@@ -197,14 +251,12 @@ class Board {
                     this.field[x1][i - 1] = "O";
                 }
             }
-
-
         }
         if (shipOrientation.equalsIgnoreCase("vertical")) {
-            x1 = getRowLabelIndex(location.getX1());
-            x2 = getColumnLabelIndex(location.getX2());
-            y1 = getRowLabelIndex(location.getY1());
-            y2 = getColumnLabelIndex(location.getY2());
+            x1 = getRowLabelIndex(coordinates.getX1());
+            x2 = getColumnLabelIndex(coordinates.getX2());
+            y1 = getRowLabelIndex(coordinates.getY1());
+            y2 = getColumnLabelIndex(coordinates.getY2());
             for (int i = x1; i <= y1; i++) {
                 this.field[i][x2] = "O";
             }
@@ -212,20 +264,17 @@ class Board {
 
     }
 
-    public boolean isShipTooCloseToOtherShip(Location location) {
-        String shipOrientation = getShipOrientation(location);
-        int x1;
-        int y1;
-        int x2;
-        int y2;
+    public boolean isShipTooCloseToOtherShip(Coordinates coordinates) {
+        String shipOrientation = getShipOrientation(coordinates);
+        int x1, x2, y1, y2;
         boolean checkEast;
         boolean checkWest;
         boolean checkNorth;
         boolean checkSouth;
         if (shipOrientation.equalsIgnoreCase("horizontal")) {
-            x1 = getRowLabelIndex(location.getX1());
-            x2 = Integer.parseInt(location.getX2());
-            y2 = Integer.parseInt(location.getY2());
+            x1 = getRowLabelIndex(coordinates.getX1());
+            x2 = Integer.parseInt(coordinates.getX2());
+            y2 = Integer.parseInt(coordinates.getY2());
             if (x2 < y2) {
                 try {
                     checkWest = this.field[x1][x2 - 2].equalsIgnoreCase("O");
@@ -254,18 +303,18 @@ class Board {
 
         }
         if (shipOrientation.equalsIgnoreCase("vertical")) {
-            x1 = getRowLabelIndex(location.getX1());
-            x2 = getColumnLabelIndex(location.getX2());
-            y1 = getRowLabelIndex(location.getY1());
-            y2 = getColumnLabelIndex(location.getY2());
+            x1 = getRowLabelIndex(coordinates.getX1());
+            x2 = getColumnLabelIndex(coordinates.getX2());
+            y1 = getRowLabelIndex(coordinates.getY1());
+            y2 = getColumnLabelIndex(coordinates.getY2());
             if (x1 < y1) {
                 try {
-                    checkNorth = this.field[x1-1][x2].equalsIgnoreCase("O");
+                    checkNorth = this.field[x1 - 1][x2].equalsIgnoreCase("O");
                     if (checkNorth) return true;
                 } catch (Exception ignored) {
                 }
                 try {
-                    checkSouth = this.field[y1+1][y2 + 1].equalsIgnoreCase("O");
+                    checkSouth = this.field[y1 + 1][y2 + 1].equalsIgnoreCase("O");
                     if (checkSouth) return true;
                 } catch (Exception ignored) {
                 }
@@ -283,14 +332,14 @@ class Board {
                 }
 
             }
-            if (x1 > y1){
+            if (x1 > y1) {
                 try {
-                    checkNorth = this.field[x1-1][x2].equalsIgnoreCase("O");
+                    checkNorth = this.field[x1 - 1][x2].equalsIgnoreCase("O");
                     if (checkNorth) return true;
                 } catch (Exception ignored) {
                 }
                 try {
-                    checkSouth = this.field[x1+1][x2].equalsIgnoreCase("O");
+                    checkSouth = this.field[x1 + 1][x2].equalsIgnoreCase("O");
                     if (checkSouth) return true;
                 } catch (Exception ignored) {
                 }
@@ -334,18 +383,24 @@ class Board {
 }
 
 
-class Location {
+class Coordinates {
     private String x1;
     private String x2;
     private String y1;
     private String y2;
 
-    public Location(String x1, String x2, String y1, String y2) {
+    public Coordinates(String x1, String x2) {
+        this.x1 = x1;
+        this.x2 = x2;
+    }
+    public Coordinates(String x1, String x2, String y1, String y2) {
         this.x1 = x1;
         this.x2 = x2;
         this.y1 = y1;
         this.y2 = y2;
     }
+
+
 
     public String getX1() {
         return x1;
@@ -384,13 +439,13 @@ class Ship {
     private String name;
     private int size;
     private int health;
-    private Location location;
+    private Coordinates coordinates;
 
-    public Ship(ShipType shipType, int size, int health, Location location) {
+    public Ship(ShipType shipType, int size, int health, Coordinates coordinates) {
         this.name = shipType.getName();
         this.size = size;
         this.health = health;
-        this.location = location;
+        this.coordinates = coordinates;
     }
 
     public String getName() {
@@ -417,12 +472,12 @@ class Ship {
         this.health = health;
     }
 
-    public Location getLocation() {
-        return location;
+    public Coordinates getLocation() {
+        return coordinates;
     }
 
-    public void setLocation(Location location) {
-        this.location = location;
+    public void setLocation(Coordinates coordinates) {
+        this.coordinates = coordinates;
     }
 
 }
