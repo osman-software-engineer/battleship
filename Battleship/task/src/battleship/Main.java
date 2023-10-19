@@ -1,5 +1,6 @@
 package battleship;
 
+import java.util.Objects;
 import java.util.Scanner;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -59,38 +60,83 @@ public class Main {
                 continue;
             }
             gameBoard.placeShip(shipCoordinates);
-            ship.setLocation(shipCoordinates);
+            ship.setUserInputCoordinates(shipCoordinates);
+            ship.setOrientation(gameBoard.getShipOrientation(shipCoordinates));
             gameBoard.printFogOfWar();
         }
         // The Game Starts
         System.out.println("The game starts!");
-        Board fogBoard = new Board(10,10);
+        Board fogBoard = new Board(10, 10);
         fogBoard.createFogOfWar();
         fogBoard.printFogOfWar();
         System.out.println("Take a shot!");
         Coordinates shotCoordinates = null;
-        userInput = scanner.nextLine();
-        while (!gameBoard.isShotLocationCorrect(userInput)) {
-            System.out.println("Error! You entered the wrong coordinates! Try again:");
+        while (true) {
             userInput = scanner.nextLine();
+            while (!gameBoard.isShotLocationCorrect(userInput)) {
+                System.out.println("Error! You entered the wrong coordinates! Try again:");
+                userInput = scanner.nextLine();
+                shotCoordinates = getShotCoordinates(userInput);
+                continue;
+            }
             shotCoordinates = getShotCoordinates(userInput);
-            continue;
-        }
-        shotCoordinates = getShotCoordinates(userInput);
-        if (gameBoard.getCoordinatesStatus(shotCoordinates).equalsIgnoreCase("occupied")) {
-            gameBoard.takeShot(shotCoordinates);
-            fogBoard.takeShot(shotCoordinates);
-            fogBoard.printFogOfWar();
-            System.out.println("You hit a ship!");
-            gameBoard.printFogOfWar();
-        } else {
-            gameBoard.missedShot(shotCoordinates);
-            fogBoard.missedShot(shotCoordinates);
-            fogBoard.printFogOfWar();
-            System.out.println("You missed!");
-            gameBoard.printFogOfWar();
+            if (gameBoard.getCoordinatesStatus(shotCoordinates).equalsIgnoreCase("occupied")) {
+                gameBoard.takeShot(shotCoordinates);
+                fogBoard.takeShot(shotCoordinates);
+                fogBoard.printFogOfWar();
+                System.out.println("You hit a ship! Try again:");
+                gameBoard.printFogOfWar();
+                // Deduct Health
+                //1) Identify which ship got hit
+                //2) Reduce its health
+                for (Ship ship : ships) {
+                    shipCoordinates = ship.getUserInputCoordinates();
+                    int shotRow, shotCol;
+                    Coordinates shipAddress = gameBoard.getShipAddress(shipCoordinates, ship);
+                    int shipStartRow, shipStartCol, shipEndRow, shipEndCol;
+                    if ("horizontal".equalsIgnoreCase(ship.getOrientation())) {
+                        shotRow = Board.getRowLabelIndex(shotCoordinates.getX1());
+                        shotCol = Integer.parseInt(shotCoordinates.getX2());
+                        shipStartRow = Integer.parseInt(shipAddress.getX1());
+                        shipStartCol = Integer.parseInt(shipAddress.getX2());
+                        shipEndRow = Integer.parseInt(shipAddress.getY1());
+                        shipEndCol = Integer.parseInt(shipAddress.getY2());
+                    } else {
+                        shotRow = Board.getRowLabelIndex(shotCoordinates.getX1());
+                        shotCol = Board.getColumnLabelIndex(shotCoordinates.getX2());
+                        shipStartRow = Integer.parseInt(shipAddress.getX1());
+                        shipStartCol = Integer.parseInt(shipAddress.getX2());
+                        shipEndRow = Integer.parseInt(shipAddress.getY1());
+                        shipEndCol = Integer.parseInt(shipAddress.getY2());
+                    }
+                    if (!"sank".equalsIgnoreCase(ship.getStatus()) && isShipHitByIndices(shotRow, shotCol, shipStartRow, shipStartCol, shipEndRow, shipEndCol)) {
+                        ship.setHealth(ship.getHealth() - 1);
+                    }
+                    if (ship.getHealth() == 0 && !"sank".equalsIgnoreCase(ship.getStatus())) {
+                        System.out.println("You sank a ship! Specify a new target:");
+                        ship.setStatus("sank");
+                    }
+                }
+
+
+            } else {
+                gameBoard.missedShot(shotCoordinates);
+                fogBoard.missedShot(shotCoordinates);
+                fogBoard.printFogOfWar();
+                System.out.println("You missed. Try again:");
+                gameBoard.printFogOfWar();
+            }
+            // Check health of Ships
+            if (ships[0].getHealth() == 0 && ships[1].getHealth() == 0 && ships[2].getHealth() == 0 && ships[3].getHealth() == 0 && ships[4].getHealth() == 0) {
+                System.out.println("You sank the last ship. You won. Congratulations!");
+                break;
+            }
         }
 
+    }
+
+    public static boolean isShipHitByIndices(int shotRow, int shotCol, int shipStartRow, int shipStartCol, int shipEndRow, int shipEndCol) {
+        return shipStartRow <= shotRow && shotRow <= shipEndRow && shipStartCol <= shotCol && shotCol <= shipEndCol;
     }
 
     private static Coordinates getShipCoordinates(String userInput) {
@@ -112,7 +158,7 @@ public class Main {
         Ship aircraftCarrier = new Ship(ShipType.AIRCRAFT_CARRIER, 5, 5, null);
         Ship battleship = new Ship(ShipType.BATTLESHIP, 4, 4, null);
         Ship submarine = new Ship(ShipType.SUBMARINE, 3, 3, null);
-        Ship cruiser = new Ship(ShipType.CRUISER, 3, 2, null);
+        Ship cruiser = new Ship(ShipType.CRUISER, 3, 3, null);
         Ship destroyer = new Ship(ShipType.DESTROYER, 2, 2, null);
         ships[0] = aircraftCarrier;
         ships[1] = battleship;
@@ -124,6 +170,10 @@ public class Main {
 
 
 class Board {
+    public String[][] getField() {
+        return field;
+    }
+
     private final String[][] field;
 
     private final int rowSize;
@@ -176,7 +226,9 @@ class Board {
         x2 = getColumnLabelIndex(coordinates.getX2());
         if ("O".equalsIgnoreCase(this.field[x1][x2])) {
             return "occupied";
-        } else {
+        } else if ("X".equalsIgnoreCase(this.field[x1][x2])){
+            return "occupied";
+        }else {
             return "empty";
         }
     }
@@ -186,6 +238,7 @@ class Board {
         x1 = getRowLabelIndex(coordinates.getX1());
         x2 = getColumnLabelIndex(coordinates.getX2());
         this.field[x1][x2] = "X";
+
     }
 
     public void missedShot(Coordinates coordinates) {
@@ -242,23 +295,47 @@ class Board {
         }
     }
 
+    public Coordinates getShipAddress(Coordinates shipCoordinates, Ship ship) {
+        String shipOrientation = getShipOrientation(shipCoordinates);
+        int x1, x2, y1 = 0, y2;
+        if (shipOrientation.equalsIgnoreCase("horizontal")) {
+            ship.setOrientation("horizontal");
+            // Parsing Coordinates to Array indices
+            x1 = getRowLabelIndex(shipCoordinates.getX1());
+            x2 = Integer.parseInt(shipCoordinates.getX2());
+            y1 = getRowLabelIndex(shipCoordinates.getY1());
+            y2 = Integer.parseInt(shipCoordinates.getY2());
+            ship.setArrayIndices(new Coordinates(String.valueOf(x1), String.valueOf(Math.min(x2,y2)), String.valueOf(y1), String.valueOf(Math.max(x2,y2))));
+            return ship.getArrayIndices();
+        }
+        if (shipOrientation.equalsIgnoreCase("vertical")) {
+            ship.setOrientation("vertical");
+            x1 = getRowLabelIndex(shipCoordinates.getX1());
+            x2 = getColumnLabelIndex(shipCoordinates.getX2());
+            y1 = getRowLabelIndex(shipCoordinates.getY1());
+            y2 = getColumnLabelIndex(shipCoordinates.getY2());
+            ship.setArrayIndices(new Coordinates(String.valueOf(Math.min(x1,y1)), String.valueOf(x2), String.valueOf(Math.max(x1,y1)), String.valueOf(y2)));
+            return ship.getArrayIndices();
+        }
+        return ship.getArrayIndices();
+    }
+
     public void placeShip(Coordinates coordinates) {
         String shipOrientation = getShipOrientation(coordinates);
         int x1, x2, y1, y2;
         if (shipOrientation.equalsIgnoreCase("horizontal")) {
+            // Parsing Coordinates to Array indices
             x1 = getRowLabelIndex(coordinates.getX1());
             x2 = Integer.parseInt(coordinates.getX2());
             y2 = Integer.parseInt(coordinates.getY2());
-            if (x2 < y2) {
-                for (int i = x2; i <= y2; i++) {
-                    this.field[x1][i - 1] = "O";
-                }
+            for (int i = Math.min(x2, y2); i <= Math.max(x2, y2); i++) {
+                this.field[x1][i - 1] = "O";
             }
-            if (x2 > y2) {
+            /*if (x2 > y2) {
                 for (int i = y2; i <= x2; i++) {
                     this.field[x1][i - 1] = "O";
                 }
-            }
+            }*/
         }
         if (shipOrientation.equalsIgnoreCase("vertical")) {
             x1 = getRowLabelIndex(coordinates.getX1());
@@ -369,7 +446,7 @@ class Board {
         return false;
     }
 
-    private static int getRowLabelIndex(String rowLabel) {
+    public static int getRowLabelIndex(String rowLabel) {
         return switch (rowLabel) {
             case "A" -> 0;
             case "B" -> 1;
@@ -385,7 +462,7 @@ class Board {
         };
     }
 
-    private static int getColumnLabelIndex(String colLabel) {
+    public static int getColumnLabelIndex(String colLabel) {
         return Integer.parseInt(colLabel) - 1;
     }
 }
@@ -441,19 +518,63 @@ class Coordinates {
     public void setY2(String y2) {
         this.y2 = y2;
     }
+
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (o == null || getClass() != o.getClass()) return false;
+        Coordinates that = (Coordinates) o;
+        return Objects.equals(x1, that.x1) && Objects.equals(x2, that.x2) && Objects.equals(y1, that.y1) && Objects.equals(y2, that.y2);
+    }
+
+    @Override
+    public int hashCode() {
+        return Objects.hash(x1, x2, y1, y2);
+    }
+
+    @Override
+    public String toString() {
+        return "Coordinates{" +
+                "x1='" + x1 + '\'' +
+                ", x2='" + x2 + '\'' +
+                ", y1='" + y1 + '\'' +
+                ", y2='" + y2 + '\'' +
+                '}';
+    }
 }
 
 class Ship {
     private String name;
     private int size;
     private int health;
-    private Coordinates coordinates;
+
+    private String orientation;
+    private String status;
+    private Coordinates userInputCoordinates;
+
+    private Coordinates arrayIndices;
 
     public Ship(ShipType shipType, int size, int health, Coordinates coordinates) {
         this.name = shipType.getName();
         this.size = size;
         this.health = health;
-        this.coordinates = coordinates;
+        this.userInputCoordinates = coordinates;
+    }
+
+    public String getStatus() {
+        return status;
+    }
+
+    public void setStatus(String status) {
+        this.status = status;
+    }
+
+    public Coordinates getArrayIndices() {
+        return arrayIndices;
+    }
+
+    public void setArrayIndices(Coordinates arrayIndices) {
+        this.arrayIndices = arrayIndices;
     }
 
     public String getName() {
@@ -480,14 +601,47 @@ class Ship {
         this.health = health;
     }
 
-    public Coordinates getLocation() {
-        return coordinates;
+    public Coordinates getUserInputCoordinates() {
+        return userInputCoordinates;
     }
 
-    public void setLocation(Coordinates coordinates) {
-        this.coordinates = coordinates;
+    public void setUserInputCoordinates(Coordinates userInputCoordinates) {
+        this.userInputCoordinates = userInputCoordinates;
     }
 
+    public String getOrientation() {
+        return orientation;
+    }
+
+    public void setOrientation(String orientation) {
+        this.orientation = orientation;
+    }
+
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (o == null || getClass() != o.getClass()) return false;
+        Ship ship = (Ship) o;
+        return size == ship.size && health == ship.health && Objects.equals(name, ship.name) && Objects.equals(userInputCoordinates, ship.userInputCoordinates);
+    }
+
+    @Override
+    public String toString() {
+        return "Ship{" +
+                "name='" + name + '\'' +
+                ", size=" + size +
+                ", health=" + health +
+                ", orientation='" + orientation + '\'' +
+                ", status='" + status + '\'' +
+                ", userInputCoordinates=" + userInputCoordinates +
+                ", arrayIndices=" + arrayIndices +
+                '}';
+    }
+
+    @Override
+    public int hashCode() {
+        return Objects.hash(name, size, health, userInputCoordinates);
+    }
 }
 
 enum ShipType {
