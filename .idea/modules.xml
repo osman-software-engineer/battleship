@@ -22,6 +22,9 @@
       <module fileurl="file://$PROJECT_DIR$/.idea/modules/Battleship/task/build/tmp/battleship.Battleship-task-build-tmp.iml" filepath="$PROJECT_DIR$/.idea/modules/Battleship/task/build/tmp/battleship.Battleship-task-build-tmp.iml" />
       <module fileurl="file://$PROJECT_DIR$/.idea/modules/Battleship/task/build/tmp/battleship.Battleship-task-build-tmp.main.iml" filepath="$PROJECT_DIR$/.idea/modules/Battleship/task/build/tmp/battleship.Battleship-task-build-tmp.main.iml" />
       <module fileurl="file://$PROJECT_DIR$/.idea/modules/Battleship/task/build/tmp/battleship.Battleship-task-build-tmp.test.iml" filepath="$PROJECT_DIR$/.idea/modules/Battleship/task/build/tmp/battleship.Battleship-task-build-tmp.test.iml" />
+      <module fileurl="file://$PROJECT_DIR$/.idea/modules/Battleship/task/out/battleship.Battleship-task-out.iml" filepath="$PROJECT_DIR$/.idea/modules/Battleship/task/out/battleship.Battleship-task-out.iml" />
+      <module fileurl="file://$PROJECT_DIR$/.idea/modules/Battleship/task/out/battleship.Battleship-task-out.main.iml" filepath="$PROJECT_DIR$/.idea/modules/Battleship/task/out/battleship.Battleship-task-out.main.iml" />
+      <module fileurl="file://$PROJECT_DIR$/.idea/modules/Battleship/task/out/battleship.Battleship-task-out.test.iml" filepath="$PROJECT_DIR$/.idea/modules/Battleship/task/out/battleship.Battleship-task-out.test.iml" />
       <module fileurl="file://$PROJECT_DIR$/.idea/modules/Battleship/task/battleship.Battleship-task.main.iml" filepath="$PROJECT_DIR$/.idea/modules/Battleship/task/battleship.Battleship-task.main.iml" />
       <module fileurl="file://$PROJECT_DIR$/.idea/modules/Battleship/task/battleship.Battleship-task.test.iml" filepath="$PROJECT_DIR$/.idea/modules/Battleship/task/battleship.Battleship-task.test.iml" />
       <module fileurl="file://$PROJECT_DIR$/.idea/modules/util/battleship.util.iml" filepath="$PROJECT_DIR$/.idea/modules/util/battleship.util.iml" />

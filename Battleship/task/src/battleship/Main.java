@@ -32,12 +32,12 @@ public class Main {
                 shipCoordinates = getShipCoordinates(userInput);
                 continue;
             }
-
+            // Validate Ship Length is Correct
             while (!gameBoard.isShipLengthCorrect(shipCoordinates, ship)) {
                 System.out.printf("Error! Wrong length of the %s! Try again:\n", ship.getName());
                 userInput = scanner.nextLine();
                 shipCoordinates = getShipCoordinates(userInput);
-                //Validate Ship Location
+                //Again Validate Ship Location is within game board dimensions
                 while (!gameBoard.isShipLocationCorrect(userInput)) {
                     System.out.println("Error! Wrong ship location! Try again:");
                     userInput = scanner.nextLine();
@@ -50,6 +50,7 @@ public class Main {
                 System.out.println("Error! You placed it too close to another one. Try again:");
                 userInput = scanner.nextLine();
                 shipCoordinates = getShipCoordinates(userInput);
+                // Again Validate Ship Location is within game board dimensions
                 while (!gameBoard.isShipLocationCorrect(userInput) || gameBoard.getShipOrientation(shipCoordinates).equalsIgnoreCase("diagonal")) {
                     System.out.println("Error! Wrong ship location! Try again:");
                     userInput = scanner.nextLine();
@@ -57,13 +58,15 @@ public class Main {
                 }
                 continue;
             }
-
             gameBoard.placeShip(shipCoordinates);
             ship.setLocation(shipCoordinates);
             gameBoard.printFogOfWar();
         }
+        // The Game Starts
         System.out.println("The game starts!");
-        gameBoard.printFogOfWar();
+        Board fogBoard = new Board(10,10);
+        fogBoard.createFogOfWar();
+        fogBoard.printFogOfWar();
         System.out.println("Take a shot!");
         Coordinates shotCoordinates = null;
         userInput = scanner.nextLine();
@@ -74,13 +77,16 @@ public class Main {
             continue;
         }
         shotCoordinates = getShotCoordinates(userInput);
-
-        if (gameBoard.getCoordinatesStatus(shotCoordinates).equalsIgnoreCase("occupied")){
+        if (gameBoard.getCoordinatesStatus(shotCoordinates).equalsIgnoreCase("occupied")) {
             gameBoard.takeShot(shotCoordinates);
+            fogBoard.takeShot(shotCoordinates);
+            fogBoard.printFogOfWar();
             System.out.println("You hit a ship!");
             gameBoard.printFogOfWar();
         } else {
             gameBoard.missedShot(shotCoordinates);
+            fogBoard.missedShot(shotCoordinates);
+            fogBoard.printFogOfWar();
             System.out.println("You missed!");
             gameBoard.printFogOfWar();
         }
@@ -95,6 +101,7 @@ public class Main {
         String y2 = splitUserInput[1].substring(1);
         return new Coordinates(x1, x2, y1, y2);
     }
+
     private static Coordinates getShotCoordinates(String userInput) {
         String x1 = userInput.substring(0, 1);
         String x2 = userInput.substring(1);
@@ -180,6 +187,7 @@ class Board {
         x2 = getColumnLabelIndex(coordinates.getX2());
         this.field[x1][x2] = "X";
     }
+
     public void missedShot(Coordinates coordinates) {
         int x1, x2;
         x1 = getRowLabelIndex(coordinates.getX1());
@@ -393,13 +401,13 @@ class Coordinates {
         this.x1 = x1;
         this.x2 = x2;
     }
+
     public Coordinates(String x1, String x2, String y1, String y2) {
         this.x1 = x1;
         this.x2 = x2;
         this.y1 = y1;
         this.y2 = y2;
     }
-
 
 
     public String getX1() {
