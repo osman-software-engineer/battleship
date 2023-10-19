@@ -6,8 +6,11 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 public class Main {
+
+    public static final int BOARD_SIZE = 10;
+
     public static void main(String[] args) {
-        Board gameBoard = new Board(10, 10);
+        Board gameBoard = new Board(BOARD_SIZE, BOARD_SIZE);
         gameBoard.createFogOfWar();
         gameBoard.printFogOfWar();
         Ship[] ships = new Ship[5];
@@ -59,14 +62,14 @@ public class Main {
                 }
                 continue;
             }
-            gameBoard.placeShip(shipCoordinates);
+            gameBoard.placeShip(shipCoordinates); // Place ship on board
             ship.setUserInputCoordinates(shipCoordinates);
             ship.setOrientation(gameBoard.getShipOrientation(shipCoordinates));
             gameBoard.printFogOfWar();
         }
         // The Game Starts
         System.out.println("The game starts!");
-        Board fogBoard = new Board(10, 10);
+        Board fogBoard = new Board(BOARD_SIZE, BOARD_SIZE);
         fogBoard.createFogOfWar();
         fogBoard.printFogOfWar();
         System.out.println("Take a shot!");
@@ -170,6 +173,11 @@ public class Main {
 
 
 class Board {
+
+    public static final String EMPTY_CHAR = "~";
+    public static final String SHIP_CHAR = "X";
+    public static final String MISS_CHAR = "M";
+
     public String[][] getField() {
         return field;
     }
@@ -189,7 +197,7 @@ class Board {
     public void createFogOfWar() {
         for (int row = 0; row < this.rowSize; row++) {
             for (int col = 0; col < this.colSize; col++) {
-                this.field[row][col] = "~";
+                this.field[row][col] = EMPTY_CHAR;
             }
         }
     }
@@ -226,7 +234,7 @@ class Board {
         x2 = getColumnLabelIndex(coordinates.getX2());
         if ("O".equalsIgnoreCase(this.field[x1][x2])) {
             return "occupied";
-        } else if ("X".equalsIgnoreCase(this.field[x1][x2])){
+        } else if (SHIP_CHAR.equalsIgnoreCase(this.field[x1][x2])){
             return "occupied";
         }else {
             return "empty";
@@ -237,7 +245,7 @@ class Board {
         int x1, x2;
         x1 = getRowLabelIndex(coordinates.getX1());
         x2 = getColumnLabelIndex(coordinates.getX2());
-        this.field[x1][x2] = "X";
+        this.field[x1][x2] = SHIP_CHAR;
 
     }
 
@@ -245,7 +253,7 @@ class Board {
         int x1, x2;
         x1 = getRowLabelIndex(coordinates.getX1());
         x2 = getColumnLabelIndex(coordinates.getX2());
-        this.field[x1][x2] = "M";
+        this.field[x1][x2] = MISS_CHAR;
     }
 
     public boolean isShotLocationCorrect(String userInput) {
