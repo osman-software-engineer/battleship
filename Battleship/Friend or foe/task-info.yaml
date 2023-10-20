@@ -454,6 +454,13 @@ files:
           }
       }
     learner_created: false
-feedback_link: https://hyperskill.org/projects/125/stages/667/implement#comment
+  - name: src/battleship/Player.java
+    visible: true
+    learner_created: true
+feedback_link: https://hyperskill.org/learn/step/10598#comment
 status: Solved
+feedback:
+  message: Well done! You've finished the project. Select a new project on <a href="https://hyperskill.org/projects">Hyperskill</a>
+    to continue learning.
+  time: "Fri, 20 Oct 2023 21:06:16 UTC"
 record: 4
